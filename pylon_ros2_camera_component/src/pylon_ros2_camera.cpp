@@ -161,16 +161,16 @@ std::unique_ptr<PylonROS2Camera> createFromDevice(PYLON_CAM_TYPE cam_type, Pylon
 {
     switch (cam_type)
     {
-        case GIGE:
-            return std::make_unique<PylonROS2GigECamera>(device);
-        case GIGE2 :
-            return std::make_unique<PylonROS2GigEAce2Camera>(device);
+        // case GIGE:
+        //     return std::make_unique<PylonROS2GigECamera>(device);
+        // case GIGE2 :
+        //     return std::make_unique<PylonROS2GigEAce2Camera>(device);
         case USB:
             return std::make_unique<PylonROS2USBCamera>(device);
         case DART:
             return std::make_unique<PylonROS2DARTCamera>(device);
-        case BLAZE:
-            return std::make_unique<PylonROS2BlazeCamera>(device);
+        // case BLAZE:
+        //     return std::make_unique<PylonROS2BlazeCamera>(device);
         case UNKNOWN:
         default:
             return nullptr;
