@@ -29,26 +29,21 @@
 
 #pragma once
 
+#include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <vector>
 
-#include <rclcpp/rclcpp.hpp>
+namespace pylon_ros2_camera {
 
-namespace pylon_ros2_camera
-{
-
-enum SHUTTER_MODE
-{
+enum SHUTTER_MODE {
     SM_ROLLING = 0,
     SM_GLOBAL = 1,
     SM_GLOBAL_RESET_RELEASE = 2,
-    SM_DEFAULT =  -1,
+    SM_DEFAULT = -1,
 };
 
-class PylonROS2CameraParameter
-{
-    
-public:
+class PylonROS2CameraParameter {
+   public:
     PylonROS2CameraParameter();
 
     virtual ~PylonROS2CameraParameter() = default;
@@ -73,6 +68,17 @@ public:
     void setDeviceUserId(rclcpp::Node& nh, const std::string& device_user_id);
 
     /**
+     * Getter for the device_serial_ set from ros-parameter server
+     */
+    const std::string& deviceSerial() const;
+
+    /**
+     * Setter for the device_serial_  to the class and as well
+     * the ros-parameter server
+     */
+    void setDeviceSerial(rclcpp::Node& nh, const std::string& device_serial);
+
+    /**
      * Getter for the string describing the shutter mode
      */
     std::string shutterModeString() const;
@@ -95,7 +101,7 @@ public:
     /**
      * Setter for the image encoding
      */
-    void setimageEncodingParam(rclcpp::Node& nh, const std::string& format); 
+    void setimageEncodingParam(rclcpp::Node& nh, const std::string& format);
 
     /**
      * Setter for the frame_rate_ initially set from ros-parameter server
@@ -114,7 +120,7 @@ public:
      */
     void setCameraInfoURL(rclcpp::Node& nh, const std::string& camera_info_url);
 
-public:
+   public:
     /** Binning factor to get downsampled images. It refers here to any camera
      * setting which combines rectangular neighborhoods of pixels into larger
      * "super-pixels." It reduces the resolution of the output image to
@@ -296,48 +302,47 @@ public:
      */
     bool auto_flash_;
     /**
-     * Flag that indicates if the camera, when using auto_flash == true, a flash connected on line 2 which should be on on exposure
-     * Only supported for GigE cameras. Default: true
+     * Flag that indicates if the camera, when using auto_flash == true, a flash connected on line 2 which should be on
+     * on exposure Only supported for GigE cameras. Default: true
      */
     bool auto_flash_line_2_;
     /**
-     * Flag that indicates if the camera has, when using auto_flash == true,  a flash connected on line 3 which should be on on exposure
-     * Only supported for GigE cameras. Default: true
+     * Flag that indicates if the camera has, when using auto_flash == true,  a flash connected on line 3 which should
+     * be on on exposure Only supported for GigE cameras. Default: true
      */
     bool auto_flash_line_3_;
-    
+
     /**
-    * camera grab timeout in ms
-    */
+     * camera grab timeout in ms
+     */
     int grab_timeout_;
 
     /**
-    * camera trigger timeout in ms
-    */
+     * camera trigger timeout in ms
+     */
     int trigger_timeout_;
 
     /**
-    * camera white balance auto 
-    */
+     * camera white balance auto
+     */
     int white_balance_auto_;
 
     /**
-    * camera white balance ratio 
-    */
+     * camera white balance ratio
+     */
     float white_balance_ratio_red_;
     float white_balance_ratio_green_;
     float white_balance_ratio_blue_;
 
     /**
-    * Camera grab strategy 
-    * 0 = GrabStrategy_OneByOne
-    * 1 = GrabStrategy_LatestImageOnly
-    * 2 = GrabStrategy_LatestImages
-    */
+     * Camera grab strategy
+     * 0 = GrabStrategy_OneByOne
+     * 1 = GrabStrategy_LatestImageOnly
+     * 2 = GrabStrategy_LatestImages
+     */
     int grab_strategy_;
 
-
-protected:
+   protected:
     /**
      * Validates the parameter set found on the ros parameter server.
      * If invalid parameters can be detected, the interface will reset them
@@ -356,6 +361,8 @@ protected:
      * device list will be used
      */
     std::string device_user_id_;
+
+    std::string device_serial_;
 
     /**
      * The desired publisher frame rate if listening to the topics.

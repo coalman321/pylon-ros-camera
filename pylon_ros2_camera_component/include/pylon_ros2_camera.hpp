@@ -28,39 +28,42 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
-#include "sensor_msgs/msg/camera_info.hpp"
-#include "sensor_msgs/msg/region_of_interest.hpp"
-#include "sensor_msgs/msg/point_cloud2.hpp"
-#include "sensor_msgs/msg/image.hpp"
-
-#include "pylon_ros2_camera_parameter.hpp"
 #include "binary_exposure_search.hpp"
+#include "pylon_ros2_camera_parameter.hpp"
+#include "sensor_msgs/msg/camera_info.hpp"
+#include "sensor_msgs/msg/image.hpp"
+#include "sensor_msgs/msg/point_cloud2.hpp"
+#include "sensor_msgs/msg/region_of_interest.hpp"
 
-
-namespace pylon_ros2_camera
-{
+namespace pylon_ros2_camera {
 
 // Number of channels for image encoding
 #define CHANNEL_MONO8 1
-#define CHANNEL_RGB8  3
+#define CHANNEL_RGB8 3
+
+enum class OpenByType {
+    DeviceUserID,
+    DeviceSerial,
+    FirstFound,
+};
 
 /**
  * The PylonROS2Camera base class. Create a new instance using the static create() functions.
  */
-class PylonROS2Camera
-{
-public:
+class PylonROS2Camera {
+   public:
 
     /**
-     * Create a new PylonROS2Camera instance. It will return the first camera that could be found.
+     * Create a new PylonROS2Camera instance. It will return the first camera that could be found matching the
+     * configured type. 
      * @return new PylonROS2Camera instance or NULL if no camera was found.
      */
-    static std::unique_ptr<PylonROS2Camera> create();
+    static std::unique_ptr<PylonROS2Camera> create(const OpenByType& open_by_type, const std::string& id = "");
 
     /**
      * Create a new PylonROS2Camera instance based on the DeviceUserID of the camera.
@@ -68,7 +71,15 @@ public:
      * first camera that could be found is returned.
      * @return new PylonROS2Camera instance or NULL if the camera was not found.
      */
-    static std::unique_ptr<PylonROS2Camera> create(const std::string& device_user_id);
+    static std::unique_ptr<PylonROS2Camera> createUid(const std::string& device_user_id);
+
+    /**
+     * Create a new PylonROS2Camera instance based on the DeviceUserID and DeviceSerial of the camera.
+     * @param device_serial Pylon DeviceSerial. If the string is empty, the first camera that could be found is
+     * returned.
+     * @return new PylonROS2Camera instance or NULL if the camera was not found.
+     */
+    static std::unique_ptr<PylonROS2Camera> createSn(const std::string& device_serial);
 
     /**
      * Configures the camera according to the software trigger mode.
@@ -105,7 +116,7 @@ public:
     virtual bool applyCamSpecificStartupSettings(const PylonROS2CameraParameter& parameters) = 0;
 
     /**
-     * Get initial camera info 
+     * Get initial camera info
      * @return initial camera info.
      */
     virtual void getInitialCameraInfo(sensor_msgs::msg::CameraInfo& cam_info_msg) = 0;
@@ -123,7 +134,7 @@ public:
      * @param stamp if chunk timestamp is enabled, overwrite input stamp with the acquisition timestamp.
      * @return true if the image was grabbed successfully.
      */
-    virtual bool grab(std::vector<uint8_t>& image, rclcpp::Time &stamp) = 0;
+    virtual bool grab(std::vector<uint8_t>& image, rclcpp::Time& stamp) = 0;
 
     /**
      * Grab a camera frame and copy the result into image
@@ -143,10 +154,8 @@ public:
      * Dedicated to blaze integration within the pylon driver - grab data from blaze and return ros messages
      * @return true if the process is successful.
      */
-    virtual bool grabBlaze(sensor_msgs::msg::PointCloud2& cloud_msg,
-                           sensor_msgs::msg::Image& intensity_map_msg, 
-                           sensor_msgs::msg::Image& depth_map_msg, 
-                           sensor_msgs::msg::Image& depth_map_color_msg, 
+    virtual bool grabBlaze(sensor_msgs::msg::PointCloud2& cloud_msg, sensor_msgs::msg::Image& intensity_map_msg,
+                           sensor_msgs::msg::Image& depth_map_msg, sensor_msgs::msg::Image& depth_map_color_msg,
                            sensor_msgs::msg::Image& confidence_map_msg) = 0;
 
     /**
@@ -163,25 +172,23 @@ public:
      * @return true if the targeted roi could be reached
      */
     virtual bool setROI(const sensor_msgs::msg::RegionOfInterest target_roi,
-			sensor_msgs::msg::RegionOfInterest& reached_roi) = 0;
-    
+                        sensor_msgs::msg::RegionOfInterest& reached_roi) = 0;
+
     /**
      * Sets the target horizontal binning_x factor
      * @param target_binning_x the target horizontal binning_x factor.
      * @param reached_binning_x the reached horizontal binning_x factor.
      * @return false if a communication error occurred or true otherwise.
      */
-    virtual bool setBinningX(const size_t& target_binning_x,
-                             size_t& reached_binning_x) = 0;
-    
+    virtual bool setBinningX(const size_t& target_binning_x, size_t& reached_binning_x) = 0;
+
     /**
      * Sets the target vertical binning_y factor
      * @param target_binning_y the target vertical binning_y factor.
      * @param reached_binning_y the reached vertical binning_y factor.
      * @return false if a communication error occurred or true otherwise.
      */
-    virtual bool setBinningY(const size_t& target_binning_y,
-                             size_t& reached_binning_y) = 0;
+    virtual bool setBinningY(const size_t& target_binning_y, size_t& reached_binning_y) = 0;
 
     /**
      * Detects the supported image pixel encodings of the camera an stores
@@ -199,7 +206,7 @@ public:
      * @param target_ros_endcoding: string describing the encoding.
      * @return false if a communication error occurred or true otherwise.
      */
-    virtual std::string setImageEncoding(const std::string& target_ros_encoding) const= 0;
+    virtual std::string setImageEncoding(const std::string& target_ros_encoding) const = 0;
 
     /**
      * Sets the exposure time in microseconds
@@ -207,12 +214,11 @@ public:
      * @param reached_exposure time in microseconds
      * @return false if a communication error occurred or true otherwise.
      */
-    virtual bool setExposure(const float& target_exposure,
-                             float& reached_exposure) = 0;
+    virtual bool setExposure(const float& target_exposure, float& reached_exposure) = 0;
 
     /**
      * Sets autoflash active for the specified lines
-     * @param flash_on_lines map from line e.g., 1 or 2 to a boolean to 
+     * @param flash_on_lines map from line e.g., 1 or 2 to a boolean to
               activate or deactivate the autoflash for this line .
      * @return false if a communication error occurred or true otherwise.
      */
@@ -248,9 +254,7 @@ public:
      *                      reached adapting the gain.
      * @return true if the brightness could be reached or false otherwise.
      */
-    virtual bool setBrightness(const int& target_brightness,
-                               const float& current_brightness,
-                               const bool& exposure_auto,
+    virtual bool setBrightness(const int& target_brightness, const float& current_brightness, const bool& exposure_auto,
                                const bool& gain_auto) = 0;
 
     /**
@@ -283,13 +287,13 @@ public:
      * @return the horizontal y offset setting.
      */
     virtual size_t currentOffsetY() = 0;
-    
+
     /**
      * Returns the current roi setting.
      * @return the roi setting.
      */
     virtual sensor_msgs::msg::RegionOfInterest currentROI() = 0;
-    
+
     /**
      * Returns the current horizontal binning_x setting.
      * @return the horizontal binning_x setting.
@@ -477,12 +481,12 @@ public:
     const std::vector<float>& sequencerExposureTimes() const;
 
     /**
-     * set the x-axis, y-axis offset value 
+     * set the x-axis, y-axis offset value
      * @param offsetValue the offset value in the x-axis.
      * @param xAxis if true set the offset in the x-axis otherwise in y-axis.
      * @return error message if an error occurred or done message otherwise.
      */
-    virtual std::string setOffsetXY(const int& offsetValue, bool xAxis) = 0; 
+    virtual std::string setOffsetXY(const int& offsetValue, bool xAxis) = 0;
 
     /**
      * Reverse the image around x-axis and/or y-axis
@@ -493,40 +497,40 @@ public:
     virtual std::string reverseXY(const bool& data, bool around_x) = 0;
 
     /**
-     * Get current status of reverse X/Y 
+     * Get current status of reverse X/Y
      * @param returnX true-> return reverse status of x-axis, false->return reverse status of y-axis
      * @return current reverse status of x or y
      */
     virtual bool getReverseXY(const bool& returnX) = 0;
 
     /**
-     * Set the image black level 
+     * Set the image black level
      * @param data the new black level.
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setBlackLevel(const int& data) = 0;
 
     /**
-     * Get the image black level 
+     * Get the image black level
      * @return current black level
      */
     virtual int getBlackLevel() = 0;
 
     /**
-     * Set the PGI mode 
+     * Set the PGI mode
      * @param on : true = on, false = off.
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setPGIMode(const bool& on) = 0;
 
     /**
-     * Get the PGI mode 
+     * Get the PGI mode
      * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = Off, 1 = On
      */
     virtual int getPGIMode() = 0;
 
     /**
-     * Set the demosaicing mode 
+     * Set the demosaicing mode
      * @param mode : 0 = simple, 1 = Basler PGI.
      * @return error message if an error occurred or done message otherwise.
      */
@@ -539,46 +543,47 @@ public:
     virtual int getDemosaicingMode() = 0;
 
     /**
-     * Set the noise reduction value 
+     * Set the noise reduction value
      * @param value : targeted noise reduction value (range : 0.0 to 0.2).
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setNoiseReduction(const float& value) = 0;
 
     /**
-     * get current noise reduction value 
-     * @return current noise reduction value, -20000.0 = Error, -10000.0 = Not available 
+     * get current noise reduction value
+     * @return current noise reduction value, -20000.0 = Error, -10000.0 = Not available
      */
     virtual float getNoiseReduction() = 0;
 
     /**
-     * Set the sharpness enhancement value. 
+     * Set the sharpness enhancement value.
      * @param value : targeted sharpness enhancement value (range : 1.0 to 3.98438).
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setSharpnessEnhancement(const float& value) = 0;
 
     /**
-     * Get current sharpness enhancement value. 
-     * @return current sharpness enhancement value, -20000.0 = Error, -10000.0 = Not available 
+     * Get current sharpness enhancement value.
+     * @return current sharpness enhancement value, -20000.0 = Error, -10000.0 = Not available
      */
     virtual float getSharpnessEnhancement() = 0;
 
     /**
-     * set light source preset 
+     * set light source preset
      * @param value : 0 = off, 1 = Daylight5000K, 2 = Daylight6500K, 3 = Tungsten2800K
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setLightSourcePreset(const int& mode) = 0;
 
     /**
-     * get current light source preset 
-     * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = Off, 1 = Daylight5000K, 2 = Daylight6500K, 3 = Tungsten2800K
+     * get current light source preset
+     * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = Off, 1 = Daylight5000K, 2 = Daylight6500K, 3 =
+     * Tungsten2800K
      */
     virtual int getLightSourcePreset() = 0;
 
     /**
-     * set the camera balance white auto 
+     * set the camera balance white auto
      * @param mode : 0 = off , 1 = once, 2 = continuous
      * @return error message if an error occurred or done message otherwise.
      */
@@ -590,126 +595,129 @@ public:
      */
     virtual int getBalanceWhiteAuto() = 0;
 
-     /**
+    /**
      * set the sensor readout mode
      * @param mode : 0 = normal , 1 = fast.
      * @return error message if an error occurred or done message otherwise.
      */
-    virtual std::string setSensorReadoutMode(const int& mode) = 0;   
+    virtual std::string setSensorReadoutMode(const int& mode) = 0;
 
-     /**
+    /**
      * get current sensor readout mode status
      * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = Normal, 1 = Fast
      */
-    virtual int getSensorReadoutMode() = 0;  
+    virtual int getSensorReadoutMode() = 0;
 
-     /**
-     * set the acquisition frame count  
+    /**
+     * set the acquisition frame count
      * @param frameCount targeted frame count.
      * @return error message if an error occurred or done message otherwise.
      */
-    virtual std::string setAcquisitionFrameCount(const int& frameCount) = 0 ;
+    virtual std::string setAcquisitionFrameCount(const int& frameCount) = 0;
 
-     /**
-     * get current acquisition frame count  
-     * @return current acquisition frame count value, -20000.0 = Error, -10000.0 = Not available 
+    /**
+     * get current acquisition frame count
+     * @return current acquisition frame count value, -20000.0 = Error, -10000.0 = Not available
      */
-    virtual int getAcquisitionFrameCount() = 0 ;
+    virtual int getAcquisitionFrameCount() = 0;
 
-     /**
-     * set the trigger selector   
+    /**
+     * set the trigger selector
      * @param mode : 0 = Frame Start, 1 = Frame Burst Start (ace USB) / Acquisition Start (ace GigE)
      * @return error message if an error occurred or done message otherwise.
      */
-    virtual std::string setTriggerSelector(const int& mode) = 0 ;
-
-     /**
-     * get current trigger selector status   
-     * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = FrameStart, 1 = FrameBurstStart(USB)/AcquisitionStart(GigE)
-     */
-    virtual int getTriggerSelector() = 0 ;
+    virtual std::string setTriggerSelector(const int& mode) = 0;
 
     /**
-     * set the trigger mode   
+     * get current trigger selector status
+     * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = FrameStart, 1 =
+     * FrameBurstStart(USB)/AcquisitionStart(GigE)
+     */
+    virtual int getTriggerSelector() = 0;
+
+    /**
+     * set the trigger mode
      * @param value : false = off, true = on
      * @return error message if an error occurred or done message otherwise.
      */
-    virtual std::string setTriggerMode(const bool& value) = 0 ;
+    virtual std::string setTriggerMode(const bool& value) = 0;
 
     /**
-     * get current trigger mode   
+     * get current trigger mode
      * @return true when on, otherwise false
      */
-    virtual int getTriggerMode() = 0 ;
+    virtual int getTriggerMode() = 0;
 
     /**
-     * execute a software trigger   
+     * execute a software trigger
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string executeSoftwareTrigger() = 0;
 
     /**
-     * set camera trigger source  
-     * @param source : 0 = software, 1 = Line1, 2 = Line2, 3 = Line3, 4 = Line4, 5 = Action1, 6 = PeriodicSignal1 (only selected GigE Camera and Blaze)
+     * set camera trigger source
+     * @param source : 0 = software, 1 = Line1, 2 = Line2, 3 = Line3, 4 = Line4, 5 = Action1, 6 = PeriodicSignal1 (only
+     * selected GigE Camera and Blaze)
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setTriggerSource(const int& source) = 0;
 
     /**
-     * get current camera trigger source  
-     * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = Software, 1 = Line1, 2 = Line3, 3 = Line4, 4 = Action1(only selected GigE Camera and Blaze)
+     * get current camera trigger source
+     * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = Software, 1 = Line1, 2 = Line3, 3 = Line4, 4 =
+     * Action1(only selected GigE Camera and Blaze)
      */
     virtual int getTriggerSource() = 0;
 
     /**
-     * set camera trigger activation type  
+     * set camera trigger activation type
      * @param value : 0 = RigingEdge, 1 = FallingEdge
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setTriggerActivation(const int& value) = 0;
 
     /**
-     * get current camera trigger activation type  
+     * get current camera trigger activation type
      * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = RisingEdge, 1 = FallingEdge
      */
     virtual int getTriggerActivation() = 0;
 
     /**
-     * set camera trigger delay value  
-     * @param delayValue required dely value in µs 
+     * set camera trigger delay value
+     * @param delayValue required dely value in µs
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setTriggerDelay(const float& delayValue) = 0;
 
     /**
-     * get current camera trigger delay value  
-     * @return current trigger delay value, -20000.0 = Error, -10000.0 = Not available 
+     * get current camera trigger delay value
+     * @return current trigger delay value, -20000.0 = Error, -10000.0 = Not available
      */
     virtual float getTriggerDelay() = 0;
 
     /**
-     * set camera line selector  
-     * @param value : 0 = line1, 1 = line2, 2 = line3, 3 = line4   
+     * set camera line selector
+     * @param value : 0 = line1, 1 = line2, 2 = line3, 3 = line4
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setLineSelector(const int& value) = 0;
 
     /**
-     * set camera line mode  
-     * @param value : 0 = input, 1 = output   
+     * set camera line mode
+     * @param value : 0 = input, 1 = output
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setLineMode(const int& value) = 0;
 
     /**
-     * set camera line source  
-     * @param value : 0 = exposure active  
+     * set camera line source
+     * @param value : 0 = exposure active
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setLineSource(const int& value) = 0;
 
     /**
-     * set device link throughput limit mode 
+     * set device link throughput limit mode
      * @param value : ture = invert line
      * @return error message if an error occurred or done message otherwise.
      */
@@ -730,8 +738,9 @@ public:
     virtual std::string setUserSetSelector(const int& set) = 0;
 
     /**
-     * get current selected camera user set 
-     * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = Default, 1 = UserSet1, 2 = UserSet2, 3 = UserSet3, 4 = HighGain, 5 = AutoFunctions, 6 = ColorRaw
+     * get current selected camera user set
+     * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = Default, 1 = UserSet1, 2 = UserSet2, 3 = UserSet3, 4 =
+     * HighGain, 5 = AutoFunctions, 6 = ColorRaw
      */
     virtual int getUserSetSelector() = 0;
 
@@ -749,7 +758,8 @@ public:
 
     /**
      * get camera configuration as pfs
-     * @return  A pair of strings. First string: error message if an error occurred or done message otherwise. Second string: camera configuration as pfs (if first is done).
+     * @return  A pair of strings. First string: error message if an error occurred or done message otherwise. Second
+     * string: camera configuration as pfs (if first is done).
      */
     virtual std::pair<std::string, std::string> getPfs() = 0;
 
@@ -776,7 +786,8 @@ public:
 
     /**
      * get current camera user set default selector
-     * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = Default, 1 = UserSet1, 2 = UserSet2, 3 = UserSet3, 4 = HighGain, 5 = AutoFunctions, 6 = ColorRaw
+     * @return -3 = Unknown, -2 = Error, -1 = Not available, 0 = Default, 1 = UserSet1, 2 = UserSet2, 3 = UserSet3, 4 =
+     * HighGain, 5 = AutoFunctions, 6 = ColorRaw
      */
     virtual int getUserSetDefaultSelector() = 0;
 
@@ -794,7 +805,7 @@ public:
     virtual int getDeviceLinkThroughputLimitMode() = 0;
 
     /**
-     * set device link throughput limit 
+     * set device link throughput limit
      * @param limit : device link throughput limit  Bytes/second
      * @return error message if an error occurred or done message otherwise.
      */
@@ -804,26 +815,26 @@ public:
      * reset the camera device
      * @return error message if an error occurred or done message otherwise.
      */
-    virtual std::string triggerDeviceReset() = 0; 
+    virtual std::string triggerDeviceReset() = 0;
 
     /**
      * start camera aqcuisition
      * @return error message if an error occurred or done message otherwise.
      */
-    virtual std::string grabbingStarting() const = 0; 
+    virtual std::string grabbingStarting() const = 0;
 
     /**
      * stop camera aqcuisition
      * @return error message if an error occurred or done message otherwise.
      */
-    virtual std::string grabbingStopping() = 0; 
+    virtual std::string grabbingStopping() = 0;
 
     /**
      * set the camera Maximum USB data transfer size in bytes
      * @param maxTransferSize targeted new camera Maximum USB data transfer size in bytes
      * @return error message if an error occurred or done message otherwise.
      */
-    virtual std::string setMaxTransferSize(const int& maxTransferSize) = 0 ;
+    virtual std::string setMaxTransferSize(const int& maxTransferSize) = 0;
 
     /**
      * set the camera Gamma selector (GigE Camera only)
@@ -834,7 +845,7 @@ public:
 
     /**
      * enable/disable the camera Gamma (GigE Camera only)
-     * @param enable 
+     * @param enable
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string gammaEnable(const bool& enable) = 0;
@@ -847,16 +858,17 @@ public:
 
     /**
      * manual correction of the color shifts so that white objects appear white in images acquired.
-     * The increase or decrease in intensity is proportional. For example, if the balance ratio for a color is set to 1.2, the intensity of that color is increased by 20 %
-     * @param redValue : balancd ratio of red channel 
-     * @param greenValue : balancd ratio of green channel 
-     * @param blueValue : balancd ratio of blue channel 
+     * The increase or decrease in intensity is proportional. For example, if the balance ratio for a color is set
+     * to 1.2, the intensity of that color is increased by 20 %
+     * @param redValue : balancd ratio of red channel
+     * @param greenValue : balancd ratio of green channel
+     * @param blueValue : balancd ratio of blue channel
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setWhiteBalance(const double& redValue, const double& greenValue, const double& blueValue) = 0;
-    
+
     /**
-     * set the camera grapping strategy 
+     * set the camera grapping strategy
      * @param strategy : 0 = GrabStrategy_OneByOne, 1 = GrabStrategy_LatestImageOnly, 2 = GrabStrategy_LatestImages
      * @return error message if an error occurred or done message otherwise.
      */
@@ -869,25 +881,29 @@ public:
     virtual std::string setOutputQueueSize(const int& size) = 0;
 
     /**
-     * Set the maximum number of buffers that can be used simultaneously for grabbing images - Applies to: BCON, GigE, USB and blaze.
+     * Set the maximum number of buffers that can be used simultaneously for grabbing images - Applies to: BCON, GigE,
+     * USB and blaze.
      * @return error message if an error occurred or done message otherwise.
      */
     virtual std::string setMaxNumBuffer(const int& size) = 0;
 
     /**
-     * Return the maximum number of buffers that can be used simultaneously for grabbing images - Applies to: BCON, GigE, USB and blaze.
+     * Return the maximum number of buffers that can be used simultaneously for grabbing images - Applies to: BCON,
+     * GigE, USB and blaze.
      * @return maximum number of buffers or -1/-2 if an error occurred.
      */
     virtual int getMaxNumBuffer() = 0;
 
     /**
-     * Return the GigE cameras: Number of frames received Other cameras: Number of buffers processed - Applies to: BCON, GigE, USB and blaze.
+     * Return the GigE cameras: Number of frames received Other cameras: Number of buffers processed - Applies to: BCON,
+     * GigE, USB and blaze.
      * @return value or -1/-2 if an error occurred.
      */
     virtual int getStatisticTotalBufferCount() = 0;
 
     /**
-     * Return the GigE cameras: Number of buffers with at least one failed packet. A packet is considered failed if its status is not 'success'. Other cameras: Number of buffers that returned an error.
+     * Return the GigE cameras: Number of buffers with at least one failed packet. A packet is considered failed if its
+     * status is not 'success'. Other cameras: Number of buffers that returned an error.
      * @return value or -1/-2 if an error occurred.
      */
     virtual int getStatisticFailedBufferCount() = 0;
@@ -928,7 +944,7 @@ public:
      */
     virtual std::string setChunkModeActive(const bool& enable) = 0;
 
-        /**
+    /**
      * Enable/Disable the chunk mode - Applies to: GigE, ace 2 GigE, ace 2 USB and ace USB.
      * @return error code message if an error occurred or value message otherwise.
      */
@@ -977,39 +993,41 @@ public:
     virtual std::string setChunkExposureTime(const float& value) = 0;
 
     /**
-     * Bit field that indicates the status of all of the camera's input and output lines when the image was acquired - Applies to: GigE, ace 2 GigE, ace 2 USB and ace USB.
+     * Bit field that indicates the status of all of the camera's input and output lines when the image was acquired -
+     * Applies to: GigE, ace 2 GigE, ace 2 USB and ace USB.
      * @return error  message if an error occurred or done message otherwise.
      */
     virtual int64_t getChunkLineStatusAll() = 0;
 
     /**
-    * Value of the Frame counter when the image was acquired - Applies to: GigE.
-    * @return error  message if an error occurred or done message otherwise.
-    */
+     * Value of the Frame counter when the image was acquired - Applies to: GigE.
+     * @return error  message if an error occurred or done message otherwise.
+     */
     virtual int64_t getChunkFramecounter() = 0;
 
     /**
-    * Value of the selected chunk counter - Applies to: ace 2 GigE, ace 2 USB and ace USB.
-    * @return error  message if an error occurred or done message otherwise.
-    */
+     * Value of the selected chunk counter - Applies to: ace 2 GigE, ace 2 USB and ace USB.
+     * @return error  message if an error occurred or done message otherwise.
+     */
     virtual int64_t getChunkCounterValue() = 0;
 
     /**
-    * Set timer selector - Applies to: GigE, ace 2 GigE, ace 2 USB and ace USB.
-    * @return error  message if an error occurred or done message otherwise.
-    */
+     * Set timer selector - Applies to: GigE, ace 2 GigE, ace 2 USB and ace USB.
+     * @return error  message if an error occurred or done message otherwise.
+     */
     virtual std::string setTimerSelector(const int& selector) = 0;
 
     /**
-    * Service callback for setting the internal camera signal used to trigger the selected timer - Applies to: GigE, ace 2 GigE, ace 2 USB, ace USB and dart 2 USB.
-    * @return error  message if an error occurred or done message otherwise.
-    */
+     * Service callback for setting the internal camera signal used to trigger the selected timer - Applies to: GigE,
+     * ace 2 GigE, ace 2 USB, ace USB and dart 2 USB.
+     * @return error  message if an error occurred or done message otherwise.
+     */
     virtual std::string setTimerTriggerSource(const int& source) = 0;
 
     /**
-    * Set timer duration - Applies to: ace 2 GigE, ace 2 USB, ace USB and dart 2 USB.
-    * @return error  message if an error occurred or done message otherwise.
-    */
+     * Set timer duration - Applies to: ace 2 GigE, ace 2 USB, ace USB and dart 2 USB.
+     * @return error  message if an error occurred or done message otherwise.
+     */
     virtual std::string setTimerDuration(const float& duration) = 0;
 
     /**
@@ -1109,23 +1127,29 @@ public:
     virtual std::string updateSyncFreeRunTimer() = 0;
 
     /**
-     * Set the action trigger configuration of the camera. Needed when issuing scheduled or not action commands - Applies to: ace 2 GigE.
+     * Set the action trigger configuration of the camera. Needed when issuing scheduled or not action commands -
+     * Applies to: ace 2 GigE.
      * @return error message if an error occurred or done message otherwise.
      */
-    virtual std::string setActionTriggerConfiguration(const int& action_device_key, const int& action_group_key, const unsigned int& action_group_mask,
+    virtual std::string setActionTriggerConfiguration(const int& action_device_key, const int& action_group_key,
+                                                      const unsigned int& action_group_mask,
                                                       const int& registration_mode, const int& cleanup) = 0;
 
     /**
      * Issue an action command via broadcast - Applies to: GigE, ace 2 GigE.
      * @return error message if an error occurred or done message otherwise.
      */
-    virtual std::string issueActionCommand(const int& device_key, const int& group_key, const unsigned int& group_mask, const std::string& broadcast_address) = 0;
+    virtual std::string issueActionCommand(const int& device_key, const int& group_key, const unsigned int& group_mask,
+                                           const std::string& broadcast_address) = 0;
 
     /**
      * Issue a scheduled action command via broadcast - Applies to: GigE, ace 2 GigE.
      * @return error message if an error occurred or done message otherwise.
      */
-    virtual std::string issueScheduledActionCommand(const int& device_key, const int& group_key, const unsigned int& group_mask, const int64_t& action_time_ns_from_current_timestamp, const std::string& broadcast_address) = 0;
+    virtual std::string issueScheduledActionCommand(const int& device_key, const int& group_key,
+                                                    const unsigned int& group_mask,
+                                                    const int64_t& action_time_ns_from_current_timestamp,
+                                                    const std::string& broadcast_address) = 0;
 
     /**
      * Set depth min - Applies to: blaze.
@@ -1261,7 +1285,7 @@ public:
 
     virtual ~PylonROS2Camera();
 
-protected:
+   protected:
     /**
      * Protected default constructor.
      */
@@ -1272,8 +1296,7 @@ protected:
      * @param brightness target brightness
      * @return true after reaching the target brightness.
      */
-    virtual bool setExtendedBrightness(const int& target_brightness,
-                                       const float& current_brightness) = 0;
+    virtual bool setExtendedBrightness(const int& target_brightness, const float& current_brightness) = 0;
 
     /**
      * Parameters for the extended brightness search
@@ -1284,6 +1307,11 @@ protected:
      * The DeviceUserID of the found camera
      */
     std::string device_user_id_;
+
+    /**
+     * The serial # of the found camera
+     */
+    std::string device_serial_;
 
     /**
      * Number of image rows.
@@ -1353,4 +1381,3 @@ protected:
 };
 
 }  // namespace pylon_ros2_camera
-

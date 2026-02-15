@@ -28,82 +28,55 @@
 
 #include "binary_exposure_search.hpp"
 
+namespace pylon_ros2_camera {
 
-namespace pylon_ros2_camera
-{
-
-namespace
-{
-    static const rclcpp::Logger LOGGER = rclcpp::get_logger("basler.pylon.ros2.binary_exposure_search");
+namespace {
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("basler.pylon.ros2.binary_exposure_search");
 }
 
-BinaryExposureSearch::BinaryExposureSearch(const float& target_brightness,
-                                           const float& left_lim,
-                                           const float& right_lim,
-                                           const float& current_exp)
-    : target_brightness_(target_brightness)
-    , last_exposure_(current_exp)
-    , left_limit_(left_lim)
-    , right_limit_(right_lim)
-    , new_exposure_((left_lim + right_lim) / 2.0)
-{}
+BinaryExposureSearch::BinaryExposureSearch(const float& target_brightness, const float& left_lim,
+                                           const float& right_lim, const float& current_exp) :
+    target_brightness_(target_brightness),
+    last_exposure_(current_exp),
+    left_limit_(left_lim),
+    right_limit_(right_lim),
+    new_exposure_((left_lim + right_lim) / 2.0) {}
 
-bool BinaryExposureSearch::update(const float& current_brightness,
-                                  const float& current_exposure)
-{
-    if ( is_initial_setting_ )
-    {
+bool BinaryExposureSearch::update(const float& current_brightness, const float& current_exposure) {
+    if (is_initial_setting_) {
         // no need to update the limits, the first time this function will
         // be called because limits were correctly set in the constructor
         is_initial_setting_ = false;
         return true;
     }
 
-    if ( current_brightness > target_brightness_ )
-    {
+    if (current_brightness > target_brightness_) {
         right_limit_ = current_exposure;
-    }
-    else
-    {
+    } else {
         left_limit_ = current_exposure;
     }
 
     new_exposure_ = (left_limit_ + right_limit_) / 2.0;
 
-    if ( new_exposure_ == current_exposure )
-    {
-       ++last_unchanged_exposure_counter_;
-    }
-    else
-    {
-       last_exposure_ = current_exposure;
+    if (new_exposure_ == current_exposure) {
+        ++last_unchanged_exposure_counter_;
+    } else {
+        last_exposure_ = current_exposure;
     }
 
-    if ( last_unchanged_exposure_counter_ > 2 )
-    {
-        RCLCPP_ERROR_STREAM(LOGGER, "BinaryExposureSearch failed, trying three times "
-                << "to set the same new exposure value");
+    if (last_unchanged_exposure_counter_ > 2) {
+        RCLCPP_ERROR_STREAM(LOGGER,
+                            "BinaryExposureSearch failed, trying three times " << "to set the same new exposure value");
         return false;
-    }
-    else
-    {
+    } else {
         return true;
     }
 }
 
-const float& BinaryExposureSearch::newExposure() const
-{
-    return new_exposure_;
-}
+const float& BinaryExposureSearch::newExposure() const { return new_exposure_; }
 
-void BinaryExposureSearch::limitReached(bool reached)
-{
-    limit_reached_ = reached;
-}
+void BinaryExposureSearch::limitReached(bool reached) { limit_reached_ = reached; }
 
-bool BinaryExposureSearch::isLimitReached() const
-{
-    return limit_reached_;
-}
+bool BinaryExposureSearch::isLimitReached() const { return limit_reached_; }
 
 }  // namespace pylon_ros2_camera

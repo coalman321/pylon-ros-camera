@@ -26,185 +26,106 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
-#include <sensor_msgs/image_encodings.hpp>
-
 #include "encoding_conversions.hpp"
 
+#include <sensor_msgs/image_encodings.hpp>
 
-namespace pylon_ros2_camera
-{
+namespace pylon_ros2_camera {
 
-namespace encodingconversions
-{
+namespace encodingconversions {
 
-bool ros2GenAPI(const std::string& ros_enc, std::string& gen_api_enc, bool is_16bits_available)
-{
+bool ros2GenAPI(const std::string& ros_enc, std::string& gen_api_enc, bool is_16bits_available) {
     /*
      * http://docs.ros.org/kinetic/api/sensor_msgs/html/image__encodings_8h_source.html
      */
-    if ( ros_enc == sensor_msgs::image_encodings::MONO8 )
-    {
+    if (ros_enc == sensor_msgs::image_encodings::MONO8) {
         gen_api_enc = "Mono8";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::MONO16 && ! is_16bits_available)
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::MONO16 && !is_16bits_available) {
         gen_api_enc = "Mono12";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::MONO16 && is_16bits_available)
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::MONO16 && is_16bits_available) {
         gen_api_enc = "Mono16";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BGR8 )
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BGR8) {
         gen_api_enc = "BGR8";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::RGB8 )
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::RGB8) {
         gen_api_enc = "RGB8";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BAYER_BGGR8 )
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BAYER_BGGR8) {
         gen_api_enc = "BayerBG8";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BAYER_GBRG8 )
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BAYER_GBRG8) {
         gen_api_enc = "BayerGB8";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BAYER_RGGB8 )
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BAYER_RGGB8) {
         gen_api_enc = "BayerRG8";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BAYER_GRBG8 )
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BAYER_GRBG8) {
         gen_api_enc = "BayerGR8";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BAYER_RGGB16 && ! is_16bits_available)
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BAYER_RGGB16 && !is_16bits_available) {
         gen_api_enc = "BayerRG12";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BAYER_BGGR16 && ! is_16bits_available)
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BAYER_BGGR16 && !is_16bits_available) {
         gen_api_enc = "BayerBG12";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BAYER_GBRG16 && ! is_16bits_available)
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BAYER_GBRG16 && !is_16bits_available) {
         gen_api_enc = "BayerGB12";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BAYER_GRBG16 && ! is_16bits_available)
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BAYER_GRBG16 && !is_16bits_available) {
         gen_api_enc = "BayerGR12";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BAYER_RGGB16 )
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BAYER_RGGB16) {
         gen_api_enc = "BayerRG16";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BAYER_BGGR16 )
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BAYER_BGGR16) {
         gen_api_enc = "BayerBG16";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BAYER_GBRG16 )
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BAYER_GBRG16) {
         gen_api_enc = "BayerGB16";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::BAYER_GRBG16 )
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::BAYER_GRBG16) {
         gen_api_enc = "BayerGR16";
-    }
-    else if ( ros_enc == sensor_msgs::image_encodings::YUV422 )
-    {
+    } else if (ros_enc == sensor_msgs::image_encodings::YUV422) {
         //  This is the UYVY version of YUV422 codec http://www.fourcc.org/yuv.php#UYVY
         //  with an 8-bit depth. Is the same as basler provides
-        gen_api_enc = "YUV422Packed"; // --> UYVY implementation
-    }
-    else
-    {
+        gen_api_enc = "YUV422Packed";  // --> UYVY implementation
+    } else {
         /* No gen-api pendant existant for following ROS-encodings:*/
         return false;
     }
 
     // Notes:
-    //gen_api_enc = "YCbCr422_8"; --> https://en.wikipedia.org/wiki/YCbCr currently not supported
-    //gen_api_enc = "YUV422_YUYV_Packed"; --> This is a YUVY implementation. Currently not supported.
+    // gen_api_enc = "YCbCr422_8"; --> https://en.wikipedia.org/wiki/YCbCr currently not supported
+    // gen_api_enc = "YUV422_YUYV_Packed"; --> This is a YUVY implementation. Currently not supported.
 
     return true;
 }
 
-bool genAPI2Ros(const std::string& gen_api_enc, std::string& ros_enc)
-{
-    if ( gen_api_enc == "Mono8" )
-    {
+bool genAPI2Ros(const std::string& gen_api_enc, std::string& ros_enc) {
+    if (gen_api_enc == "Mono8") {
         ros_enc = sensor_msgs::image_encodings::MONO8;
-    }
-    else if ( gen_api_enc == "Mono12" )
-    {
+    } else if (gen_api_enc == "Mono12") {
         ros_enc = sensor_msgs::image_encodings::MONO16;
-    }
-    else if ( gen_api_enc == "Mono16" )
-    {
+    } else if (gen_api_enc == "Mono16") {
         ros_enc = sensor_msgs::image_encodings::MONO16;
-    }
-    else if ( gen_api_enc == "Confidence16" )
-    {
+    } else if (gen_api_enc == "Confidence16") {
         ros_enc = sensor_msgs::image_encodings::MONO16;
-    }
-    else if ( gen_api_enc == "BGR8" )
-    {
+    } else if (gen_api_enc == "BGR8") {
         ros_enc = sensor_msgs::image_encodings::BGR8;
-    }
-    else if ( gen_api_enc == "RGB8" )
-    {
+    } else if (gen_api_enc == "RGB8") {
         ros_enc = sensor_msgs::image_encodings::RGB8;
-    }
-    else if ( gen_api_enc == "BayerBG8" )
-    {
+    } else if (gen_api_enc == "BayerBG8") {
         ros_enc = sensor_msgs::image_encodings::BAYER_BGGR8;
-    }
-    else if ( gen_api_enc == "BayerGB8" )
-    {
+    } else if (gen_api_enc == "BayerGB8") {
         ros_enc = sensor_msgs::image_encodings::BAYER_GBRG8;
-    }
-    else if ( gen_api_enc == "BayerRG8" )
-    {
+    } else if (gen_api_enc == "BayerRG8") {
         ros_enc = sensor_msgs::image_encodings::BAYER_RGGB8;
-    }
-    else if ( gen_api_enc == "BayerGR8" )
-    {
+    } else if (gen_api_enc == "BayerGR8") {
         ros_enc = sensor_msgs::image_encodings::BAYER_GRBG8;
-    }
-    else if ( gen_api_enc == "BayerRG12" )
-    {
+    } else if (gen_api_enc == "BayerRG12") {
         ros_enc = sensor_msgs::image_encodings::BAYER_RGGB16;
-    }
-    else if ( gen_api_enc == "BayerBG12" )
-    {
+    } else if (gen_api_enc == "BayerBG12") {
         ros_enc = sensor_msgs::image_encodings::BAYER_BGGR16;
-    }
-    else if ( gen_api_enc == "BayerGB12" )
-    {
+    } else if (gen_api_enc == "BayerGB12") {
         ros_enc = sensor_msgs::image_encodings::BAYER_GBRG16;
-    }
-    else if ( gen_api_enc == "BayerGR12" )
-    {
+    } else if (gen_api_enc == "BayerGR12") {
         ros_enc = sensor_msgs::image_encodings::BAYER_GRBG16;
-    }
-    else if ( gen_api_enc == "BayerRG16" )
-    {
+    } else if (gen_api_enc == "BayerRG16") {
         ros_enc = sensor_msgs::image_encodings::BAYER_RGGB16;
-    }
-    else if ( gen_api_enc == "BayerBG16" )
-    {
+    } else if (gen_api_enc == "BayerBG16") {
         ros_enc = sensor_msgs::image_encodings::BAYER_BGGR16;
-    }
-    else if ( gen_api_enc == "BayerGB16" )
-    {
+    } else if (gen_api_enc == "BayerGB16") {
         ros_enc = sensor_msgs::image_encodings::BAYER_GBRG16;
-    }
-    else if ( gen_api_enc == "BayerGR16" )
-    {
+    } else if (gen_api_enc == "BayerGR16") {
         ros_enc = sensor_msgs::image_encodings::BAYER_GRBG16;
-    }
-    else if ( gen_api_enc == "YUV422Packed" )
-    {
+    } else if (gen_api_enc == "YUV422Packed") {
         ros_enc = sensor_msgs::image_encodings::YUV422;
     }
 
@@ -220,8 +141,7 @@ bool genAPI2Ros(const std::string& gen_api_enc, std::string& ros_enc)
         }
     */
 
-    else
-    {
+    else {
         /* Unsupported are:
          * - Mono10
          * - Mono10p
@@ -246,15 +166,12 @@ bool genAPI2Ros(const std::string& gen_api_enc, std::string& ros_enc)
     return true;
 }
 
-bool is_12_bit_gen_api_enc(const std::string& gen_api_enc){
-    return ( gen_api_enc == "Mono12" )      || 
-           ( gen_api_enc == "BayerRG12" )   ||
-           ( gen_api_enc == "BayerBG12" )   ||
-           ( gen_api_enc == "BayerGB12" )   ||
-           ( gen_api_enc == "BayerGR12" );
+bool is_12_bit_gen_api_enc(const std::string& gen_api_enc) {
+    return (gen_api_enc == "Mono12") || (gen_api_enc == "BayerRG12") || (gen_api_enc == "BayerBG12") ||
+           (gen_api_enc == "BayerGB12") || (gen_api_enc == "BayerGR12");
 }
 
-bool is_12_bit_ros_enc(const std::string& ros_enc){
+bool is_12_bit_ros_enc(const std::string& ros_enc) {
     std::string gen_api_enc;
     if (ros2GenAPI(ros_enc, gen_api_enc, false)) {
         return is_12_bit_gen_api_enc(gen_api_enc);
