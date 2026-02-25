@@ -555,7 +555,7 @@ bool PylonROS2CameraImpl<CameraTrait>::grab(Pylon::CBaslerUniversalGrabResultPtr
         {
             if (!cam_->CanWaitForFrameTriggerReady())
             {
-                RCLCPP_WARN(LOGGER_BASE, "The connected camera device does not support waiting for frame trigger ready. Software trigger will be immediately executed.");
+                RCLCPP_WARN_ONCE(LOGGER_BASE, "The connected camera device does not support waiting for frame trigger ready. Software trigger will be immediately executed.");
                 cam_->ExecuteSoftwareTrigger();
             }
             else
@@ -3615,7 +3615,7 @@ int PylonROS2CameraImpl<CameraTraitT>::getChunkModeActive()
     }
     else
     {
-        RCLCPP_ERROR_STREAM(LOGGER_BASE, "Error while trying to getting the Chunk Mode Active. The connected Camera not supporting this feature");
+        RCLCPP_ERROR_STREAM_ONCE(LOGGER_BASE, "Error while trying to getting the Chunk Mode Active. The connected Camera not supporting this feature");
         return -1;      // No Supported
     }
 }
