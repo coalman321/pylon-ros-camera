@@ -689,6 +689,14 @@ protected:
                        std::shared_ptr<SetGainSrv::Response> response);
 
   /**
+   * @brief ROS 2 parameter change callback — handles live updates to 'exposure' and 'gain'
+   *        without restarting the camera stream.
+   * @param parameters list of changed parameters
+   * @return result indicating success or failure
+   */
+  rcl_interfaces::msg::SetParametersResult onParamChange(const std::vector<rclcpp::Parameter>& parameters);
+
+  /**
    * @brief Service callback for setting the desired gamma correction value
    * @param req request
    * @param res response
@@ -1818,6 +1826,9 @@ protected:
   rclcpp::TimerBase::SharedPtr timer_;
   // mutex
   std::recursive_mutex grab_mutex_;
+
+  // parameter change callback handle (keeps the registration alive)
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
 
   // intern
   std::vector<std::size_t> sampling_indices_;

@@ -123,6 +123,11 @@ bool PylonROS2CameraNode::init() {
         return false;
     }
 
+    // register the live parameter-change callback so that 'exposure' and 'gain'
+    // can be updated via `ros2 param set` without restarting the stream
+    this->param_callback_handle_ = this->add_on_set_parameters_callback(
+        std::bind(&PylonROS2CameraNode::onParamChange, this, std::placeholders::_1));
+
     return true;
 }
 
@@ -4330,6 +4335,50 @@ void PylonROS2CameraNode::publishCurrentParams() {
     }
 
     this->current_params_pub_->publish(this->current_params_);
+}
+
+rcl_interfaces::msg::SetParametersResult
+PylonROS2CameraNode::onParamChange(const std::vector<rclcpp::Parameter>& parameters) {
+    rcl_interfaces::msg::SetParametersResult result;
+    result.successful = true;
+
+    for (const auto& param : parameters) {
+        if (param.get_name() == "exposure") {
+            if (!this->pylon_camera_ || !this->pylon_camera_->isReady()) {
+                result.successful = false;
+                result.reason = "Camera not ready";
+                return result;
+            }
+            const float target = static_cast<float>(param.as_double());
+            float reached = 0.0f;
+            if (!this->setExposure(target, reached)) {
+                result.successful = false;
+                result.reason = "Failed to set exposure to " + std::to_string(target);
+                RCLCPP_WARN_STREAM(LOGGER, "onParamChange: " << result.reason);
+                return result;
+            }
+            RCLCPP_INFO_STREAM(LOGGER, "Exposure updated via parameter: requested=" << target
+                                        << " reached=" << reached);
+        } else if (param.get_name() == "gain") {
+            if (!this->pylon_camera_ || !this->pylon_camera_->isReady()) {
+                result.successful = false;
+                result.reason = "Camera not ready";
+                return result;
+            }
+            const float target = static_cast<float>(param.as_double());
+            float reached = 0.0f;
+            if (!this->setGain(target, reached)) {
+                result.successful = false;
+                result.reason = "Failed to set gain to " + std::to_string(target);
+                RCLCPP_WARN_STREAM(LOGGER, "onParamChange: " << result.reason);
+                return result;
+            }
+            RCLCPP_INFO_STREAM(LOGGER, "Gain updated via parameter: requested=" << target
+                                        << " reached=" << reached);
+        }
+    }
+
+    return result;
 }
 
 bool PylonROS2CameraNode::isSleeping() { return this->is_sleeping_; }
